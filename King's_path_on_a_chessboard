@@ -1,0 +1,111 @@
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+
+namespace King_path
+{
+    public class king_class
+    {
+        int[,] chess_board;
+        List<(int, int)> vectors = new List<(int, int)>() { (0, 1), (0, -1), (1, 0), (-1, 0), (1, 1), (1, -1), (-1, 1), (-1, -1) };
+        Dictionary<(int, int), int> distances;
+        Dictionary<(int, int), (int, int)> Ancestor;
+        (int, int) start;
+        (int, int) end;
+
+        public king_class(int[,] board, (int, int) s, (int, int) e)
+        {
+            chess_board = board;
+            start = s;
+            end = e;
+            distances = new Dictionary<(int, int), int>();
+            Ancestor = new Dictionary<(int,int), (int,int)>();
+        }
+        private bool valid((int, int) state)
+        {
+            return (chess_board[state.Item1, state.Item2] != -2);
+        }
+
+        private void reconstruction_recursive((int,int) curr_pos)
+        {
+            if (curr_pos == start) { Console.WriteLine(curr_pos.Item1 + " " + curr_pos.Item2); }
+            else 
+            {
+                reconstruction_recursive(Ancestor[curr_pos]);
+                Console.WriteLine(curr_pos.Item1 + " " + curr_pos.Item2);
+            }
+        }
+
+        public void main_BFS()
+        {
+            distances[start] = 0;
+            Queue<(int, int)> Fronta = new Queue<(int, int)>();
+            Fronta.Enqueue(start);
+            bool found = false;
+            while (Fronta.Count > 0 && !found)
+            {
+                (int,int) curr_state = Fronta.Dequeue();
+                foreach ((int, int) vector in vectors)
+                {
+                    (int,int) new_state = (curr_state.Item1 + vector.Item1, curr_state.Item2 + vector.Item2);
+                    if (valid(new_state) && !distances.ContainsKey(new_state))
+                    {
+                        if(new_state == end) { found = true; }
+                        distances[new_state] = distances[curr_state] + 1;
+                        Ancestor[new_state] = curr_state;
+                        Fronta.Enqueue(new_state);
+                    }
+                }
+            }
+
+            if (found) { reconstruction_recursive(end); }
+            else { Console.WriteLine(-1); }
+        }
+    }
+    internal class Program
+    {
+        static public int reader()
+        {
+            int vstupchar = Console.Read();
+            int cislo = 0;
+            int znak_cisla = 1;
+            while ((vstupchar < '0') || (vstupchar > '9') && (vstupchar != '-'))
+            {
+                if (vstupchar == '-')
+                {
+                    znak_cisla = -1;
+                }
+                else { znak_cisla = 1; }
+                vstupchar = Console.Read();
+            }
+            while ((vstupchar >= '0') && (vstupchar <= '9'))
+            {
+                cislo = cislo * 10 + vstupchar - '0';
+                vstupchar = Console.Read();
+            }
+            cislo = cislo * znak_cisla;
+            return cislo;
+        }
+        static void Main(string[] args)
+        {
+            int obstacles = reader();
+            int[,] chess_board = new int[10, 10];
+            for (int i = 0; i < obstacles; i++)
+            {
+                chess_board[reader(), reader()] = -2;
+            }
+            (int,int) start = (reader(), reader());
+            (int,int) end = (reader(), reader());
+            for (int row = 0; row < 10; row++)
+                for (int col = 0; col < 10; col++)
+                {
+                    if (row == 0 || row == 9 || col == 0 || col == 9) { chess_board[row, col] = -2; }
+                    else if (chess_board[row, col] != -2) { chess_board[row, col] = -1; }
+                }
+            king_class king = new king_class(chess_board, start, end);
+            king.main_BFS();
+        }
+    }
+}
