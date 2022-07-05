@@ -1,0 +1,103 @@
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+
+namespace Sokoban
+{
+    class Sokoban
+    {
+        (int, int) sokob_position;
+        (int, int) box_position;
+        (int, int) end_postion;
+        (int, int, int, int) found_end_state;
+        bool found_end = false;
+        Dictionary<(int,int,int,int), int> slovnik_vzdialenosti = new Dictionary<(int,int,int, int), int>();
+        int[,] pole = new int[12,12];
+        public Sokoban() {}
+
+        public void read_and_make_matrix()
+        {
+            for (int riadok = 0; riadok < pole.GetLength(0); riadok++)
+                for (int stlpec = 0; stlpec < pole.GetLength(1); stlpec++)
+                {
+                    if (riadok == 0 || riadok == pole.GetLength(0) - 1
+                        || stlpec == 0 || stlpec == pole.GetLength(1) - 1) { pole[riadok, stlpec] = -2; }
+                    else
+                    {
+                        char znak = Convert.ToChar(Console.Read());
+                        while (!".XBCS".Contains(znak)) { znak = Convert.ToChar(Console.Read()); }
+                        if (znak == 'X') { pole[riadok, stlpec] = -2; }
+                        else if (znak == 'S') { sokob_position = (riadok, stlpec); pole[riadok, stlpec] = 0; }
+                        else if (znak == 'B') { box_position = (riadok, stlpec); pole[riadok, stlpec] = 0; }
+                        else if (znak == 'C') { end_postion = (riadok, stlpec); pole[riadok, stlpec] = -1; }
+                        else { pole[riadok, stlpec] = -1; }
+                    }
+                }
+        }
+
+        private void print_matrix()
+        {
+            for (int riadok = 0; riadok < pole.GetLength(0); riadok++)
+                for (int stlpec = 0; stlpec < pole.GetLength(1); stlpec++)
+                {
+                    if (stlpec < pole.GetLength(1) - 1)
+                    { if (pole[riadok, stlpec] >= 0) { Console.Write(" "); } Console.Write(pole[riadok, stlpec]); }
+                    else { Console.WriteLine(pole[riadok, stlpec]); }
+                }
+        }
+        public void main()
+        {
+            List<(int, int)> vectors_of_socoban = new List<(int, int)>() { (0, 1), (0, -1), (1, 0), (-1, 0) };
+            Queue<(int, int, int, int)> fronta = new Queue<(int, int, int, int)>();
+            (int, int, int, int) start = (sokob_position.Item1, sokob_position.Item2, box_position.Item1, box_position.Item2);
+            slovnik_vzdialenosti[start] = 0;
+            fronta.Enqueue(start);
+            while (!found_end && fronta.Count > 0)
+            {
+                (int, int, int, int) current = fronta.Dequeue();
+                foreach ((int, int) vector in vectors_of_socoban)
+                { 
+                    (int,int) new_socob_pos = (current.Item1 + vector.Item1, vector.Item2 + current.Item2);
+                    (int,int) current_box_pos = (current.Item3, current.Item4); 
+                    (int, int) possible_box_pos = (current.Item3 + vector.Item1, vector.Item2 + current.Item4);
+                    if (pole[new_socob_pos.Item1, new_socob_pos.Item2] != -2)
+                    {
+                        (int, int, int, int) new_state = (new_socob_pos.Item1, new_socob_pos.Item2, 
+                                                        current_box_pos.Item1, current_box_pos.Item2);
+                        if (new_socob_pos == current_box_pos)
+                        {
+                            if (pole[possible_box_pos.Item1, possible_box_pos.Item2] != -2)
+                            {
+                                new_state = (new_socob_pos.Item1, new_socob_pos.Item2, possible_box_pos.Item1, possible_box_pos.Item2);
+                            }
+                            else if (pole[possible_box_pos.Item1, possible_box_pos.Item2] == -2)
+                            {
+                                new_state = (current.Item1, current.Item2, current_box_pos.Item1, current_box_pos.Item2);
+                            }
+                        }
+                        if (!slovnik_vzdialenosti.ContainsKey(new_state))
+                        {
+                            slovnik_vzdialenosti[new_state] = slovnik_vzdialenosti[current] + 1;
+                            fronta.Enqueue(new_state);
+                        }
+                        if (new_state.Item3 == end_postion.Item1 && new_state.Item4 == end_postion.Item2) 
+                        { found_end = true; found_end_state = new_state; }
+                    }
+                }
+            }
+            if (found_end) { Console.WriteLine(slovnik_vzdialenosti[found_end_state]); }
+            else { Console.WriteLine(-1); }
+        }
+    }
+    internal class Program
+    {
+        static void Main(string[] args)
+        {
+            Sokoban sokoban = new Sokoban();
+            sokoban.read_and_make_matrix();
+            sokoban.main();
+        }
+    }
+}
