@@ -1,0 +1,103 @@
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+
+namespace Kings_path
+{
+    internal class Program
+    {
+        class Sachovnica
+        {
+            private int[,] distances = new int[10, 10];
+            public Sachovnica(HashSet<(int,int)> prekazky, (int,int)start, (int, int) ciel)
+            {
+                Initializer(prekazky);
+                int distance = Main(start, ciel);
+                Console.WriteLine(distance);
+            }
+            private void Initializer(HashSet<(int, int)> list)
+            {
+                for (int row = 0; row < distances.GetLength(0); row++)
+                    for (int col = 0; col < distances.GetLength(1); col++)
+                    {
+                        if (row == 0 || row == distances.GetLength(0) - 1 || col == 0 
+                            || col == distances.GetLength(1) - 1 || list.Contains((row, col)))
+                        { distances[row, col] = -2; }
+                        else
+                        { distances[row, col] = -1; }
+                    }
+            }
+            private int Main((int,int) start, (int,int) ciel)
+            {
+                List<(int, int)> vektory_pohybu = new List<(int, int)>() 
+                                                    { (-1,-1), (1,1), (-1,1), (1,-1), (1,0), (0,1), (-1,0), (0,-1) };
+                List<(int, int)> Fronta = new List<(int, int)>() { start };
+                distances[start.Item1, start.Item2] = 0;
+                while (distances[ciel.Item1, ciel.Item2] == -1 && Fronta.Count > 0)
+                {
+                    (int, int) Actual = Fronta[0];
+                    Fronta.RemoveAt(0);
+                    foreach ((int, int) vektor in vektory_pohybu)
+                    { 
+                        (int,int) new_position = (Actual.Item1 + vektor.Item1, Actual.Item2 + vektor.Item2) ;
+                        if (distances[new_position.Item1, new_position.Item2] == -1)
+                        {
+                            distances[new_position.Item1, new_position.Item2] = distances[Actual.Item1, Actual.Item2] + 1;
+                            Fronta.Add(new_position);
+                        }
+                    }
+                }
+                //print();
+                return distances[ciel.Item1, ciel.Item2];
+            }
+            private void print()
+            {
+                for (int row = 0; row < distances.GetLength(0); row++)
+                    for (int col = 0; col < distances.GetLength(1); col++)
+                    {
+                        if (col < distances.GetLength(0) - 1) 
+                        {
+                            if (distances[row, col] >= 0) { Console.Write(" " + distances[row, col]); }
+                            else { Console.Write(distances[row, col]); }
+                        }
+                        else 
+                        {
+                            if (distances[row, col] >= 0) { Console.Write(" " + distances[row, col] + "\n"); }
+                            else { Console.Write(distances[row, col] + "\n"); }
+                        }
+                    }
+            }
+        }
+        static public int reader()
+        {
+            int vstupchar = Console.Read();
+            int cislo = 0;
+            int znak_cisla = 1;
+            while ((vstupchar < '0') || (vstupchar > '9') && (vstupchar != '-'))
+            {
+                if (vstupchar == '-')
+                {
+                    znak_cisla = -1;
+                }
+                else { znak_cisla = 1; }
+                vstupchar = Console.Read();
+            }
+            while ((vstupchar >= '0') && (vstupchar <= '9'))
+            {
+                cislo = cislo * 10 + vstupchar - '0';
+                vstupchar = Console.Read();
+            }
+            cislo = cislo * znak_cisla;
+            return cislo;
+        }
+        static void Main(string[] args)
+        {
+            HashSet<(int,int)> prekazky = new HashSet<(int,int)> ();
+            for (int pocet_prekazok = reader(); pocet_prekazok > 0; pocet_prekazok--)
+            { prekazky.Add((reader(), reader())); }
+            Sachovnica MainGame = new Sachovnica(prekazky, (reader(), reader()), (reader(), reader()));
+        }
+    }
+}
