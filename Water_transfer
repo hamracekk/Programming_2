@@ -1,0 +1,183 @@
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+
+namespace Water_transfer
+{
+    public class Water_transfer
+    {
+        private (int, int, int) Max_volumes;
+        private (int, int, int) entrance;
+        private Dictionary<(int, int, int), int> found_states = new Dictionary<(int, int, int), int>();
+        private Dictionary<int, int> found_volumes = new Dictionary<int, int>();
+        private int state_lenght = 3;
+        private int[] for_arry = new int[] { 1, -1 };
+        public Water_transfer((int, int, int) max_volumes, (int, int, int) entrance_state)
+        {
+            Max_volumes = max_volumes;
+            entrance = entrance_state;
+        }
+        private void Check_volumes_and_add((int, int, int) state, int count)
+        {
+            for (int i = 0; i < state_lenght; i++)
+            {
+                int volume = return_volume(i, state);
+                if (!found_volumes.ContainsKey(volume)) { found_volumes[volume] = count; }
+            }
+        }
+        private int return_volume(int index_to_return, (int, int, int) state)
+        {
+            switch (index_to_return)
+            {
+                case 0: return state.Item1;
+                case 1: return state.Item2;
+                case 2: return state.Item3;
+            }
+            return index_to_return;
+        }
+        private (int, int, int) write_volume(int volume, int index, (int, int, int) state)
+        {
+            switch (index)
+            {
+                case 0:
+                    state.Item1 = volume;
+                    break;
+                case 1:
+                    state.Item2 = volume;
+                    break;
+                case 2:
+                    state.Item3 = volume;
+                    break;
+            }
+            return state;
+        }
+        private void check_the_state_and_add((int, int, int) new_state, Queue<(int, int, int)> queue, int count)
+        {
+            if (!found_states.ContainsKey(new_state))
+            {
+                found_states[new_state] = count + 1;
+                queue.Enqueue(new_state);
+                Check_volumes_and_add(new_state, count + 1);
+            }
+        }
+        private bool bol_expression(int flag, int index)
+        {
+            switch (flag)
+            { 
+                case -1:
+                    if (index >= 0) { return true; }
+                    return false;
+                case 1:
+                    if( index < state_lenght) { return true; }
+                    return false;
+            }
+            return false;
+        }
+        private int set_index_to_the_bowl(int flag, int index)
+        {
+            int to_return = 0;
+            switch (flag)
+            {
+                case 1:
+                    to_return = index + 1;
+                    if (index == state_lenght - 1) { to_return = 0; }
+                    return to_return;
+                case -1:
+                    to_return = index - 1;
+                    if (index == 0) { to_return = state_lenght - 1; }
+                    return to_return;
+            }
+            return to_return;
+        }
+        private void generate_and_add_to_gueue((int, int, int) state, Queue<(int, int, int)> queue)
+        {
+            int count = found_states[state];
+            foreach (int x in for_arry)
+            {
+                int ind = 2;
+                if (x == 1) { ind = 0; }
+                for (int index = ind; bol_expression(x,index) ; index += x)
+                {
+                    int index_to_the_bowl = set_index_to_the_bowl(x, index);
+                    int volume_from = return_volume(index, state);
+                    int volume_to = return_volume(index_to_the_bowl, state);
+                    int max_volume_to = return_volume(index_to_the_bowl, Max_volumes);
+                    int max_volume_from = return_volume(index, Max_volumes);
+                    //odkud lejeme zcela vyprazdnime
+                    if ((volume_from + volume_to <= max_volume_to))
+                    {
+                        (int, int, int) new_state = state;
+                        new_state = write_volume(volume_to + volume_from, index_to_the_bowl, new_state);
+                        new_state = write_volume(0, index, new_state);
+                        check_the_state_and_add(new_state, queue, count);
+                    }
+                    // kam lijeme zcela zaplnime
+                    if (max_volume_to <= volume_from + volume_to)
+                    {
+                        (int, int, int) new_state = state;
+                        new_state = write_volume(max_volume_to, index_to_the_bowl, new_state);
+                        new_state = write_volume((volume_from + volume_to) - max_volume_to, index, new_state);
+                        check_the_state_and_add(new_state, queue, count);
+                    }
+                }
+            }             
+        }
+
+        public void main_function()
+        {
+            Queue<(int, int, int)> queue = new Queue<(int, int, int)>();
+            queue.Enqueue(entrance);
+            found_states[entrance] = 0;
+            Check_volumes_and_add(entrance, 0);
+            while (queue.Count > 0)
+            {
+                (int, int, int) current_state = queue.Dequeue();
+                generate_and_add_to_gueue(current_state, queue);            
+            }
+            print_final();
+        }
+        private void print_final()
+        {
+            int max_count = Math.Max(Max_volumes.Item1, Max_volumes.Item2);
+            max_count = Math.Max(max_count, Max_volumes.Item3);
+            for (int counts = 0; counts <= max_count; counts++)
+            {
+                if (found_volumes.ContainsKey(counts)) { Console.Write(counts + ":" + found_volumes[counts] + " "); }
+            }
+        }
+    }
+    internal class Program
+    {
+        static public int reader()
+        {
+            int vstupchar = Console.Read();
+            int cislo = 0;
+            int znak_cisla = 1;
+            while ((vstupchar < '0') || (vstupchar > '9') && (vstupchar != '-'))
+            {
+                if (vstupchar == '-')
+                {
+                    znak_cisla = -1;
+                }
+                else { znak_cisla = 1; }
+                vstupchar = Console.Read();
+            }
+            while ((vstupchar >= '0') && (vstupchar <= '9'))
+            {
+                cislo = cislo * 10 + vstupchar - '0';
+                vstupchar = Console.Read();
+            }
+            cislo = cislo * znak_cisla;
+            return cislo;
+        }
+        static void Main(string[] args)
+        {
+            (int, int, int) nadoby =  ( reader(), reader(), reader() );
+            (int, int, int) vstupny_stav =  ( reader(), reader(), reader() );
+            Water_transfer transf = new Water_transfer(nadoby, vstupny_stav);
+            transf.main_function();
+        }
+    }
+}
