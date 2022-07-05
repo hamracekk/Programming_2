@@ -1,0 +1,162 @@
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+
+namespace Two_monsters
+{
+    public class Monster
+    {
+        List<(int, int)> starts;
+        List<(int, int)> actuals;
+        char[,] maze;
+        Dictionary<char, (int, int)> char_to_vector_of_monster = new Dictionary<char, (int, int)>()
+                        { { '>', (0, 1) }, { '<', (0, -1) }, { 'v', (1, 0) }, { '^', (-1, 0) }  };
+
+        Dictionary<char, (int, int)> char_to_vector_right_hand = new Dictionary<char, (int, int)>()
+                       { { '>', (1, 0) }, { '<', (-1, 0) }, { 'v', (0, -1) }, { '^', (0, 1) }  };
+        public Monster(List<(int, int)> starts, char[,] m)
+        {
+            maze = m;
+            this.starts = starts;
+            actuals = starts;
+        }
+
+        private char turn(char c, string direction)
+        {
+            char to_return = '>';
+            switch (c)
+            {
+                case ('>'):
+                    {
+                        if (direction == "left") { to_return = '^'; }
+                        else { to_return = 'v'; }
+                        break;
+                    }
+                case ('<'):
+                    {
+                        if (direction == "left") { to_return = 'v'; }
+                        else { to_return = '^'; }
+                        break;
+                    }
+                case ('v'):
+                    {
+                        if (direction == "left") { to_return = '>'; }
+                        else { to_return = '<'; }
+                        break;
+                    }
+                case ('^'):
+                    {
+                        if (direction == "left") { to_return = '<'; }
+                        else { to_return = '>'; }
+                        break;
+                    }
+            }
+            return to_return;
+        }
+
+        private void change()
+        {
+            for(int i =0; i< actuals.Count; i++)
+            {
+                (int, int) actual = actuals[i];
+                (int, int) vector = char_to_vector_of_monster[maze[actual.Item1, actual.Item2]];
+                (int, int) vector_right = (char_to_vector_right_hand[maze[actual.Item1, actual.Item2]]);
+
+                (int, int) possible_new_pos = (actual.Item1 + vector.Item1, actual.Item2 + vector.Item2);
+                (int, int) possible_new_right = (possible_new_pos.Item1 + vector_right.Item1,
+                                                 possible_new_pos.Item2 + vector_right.Item2);
+                (int, int) current_right = (actual.Item1 + vector_right.Item1, actual.Item2 + vector_right.Item2);
+
+                char char_at_new_pos = maze[possible_new_pos.Item1, possible_new_pos.Item2];
+                char char_to_the_new_right = maze[possible_new_right.Item1, possible_new_right.Item2];
+                char char_to_curr_right = maze[current_right.Item1, current_right.Item2];
+
+                char after_turn = maze[actual.Item1, actual.Item2];
+                if (char_at_new_pos == '.' && (char_to_curr_right == 'X' || char_to_the_new_right == 'X'))
+                {
+                    maze[possible_new_pos.Item1, possible_new_pos.Item2] = maze[actual.Item1, actual.Item2];
+                    maze[actual.Item1, actual.Item2] = '.';
+                    actuals[i] = possible_new_pos;
+                }
+                else
+                {
+                    char help = maze[actual.Item1, actual.Item2];
+                    if (char_to_curr_right == '.' ) { after_turn = turn(help, "right"); }
+                    else if ((char_at_new_pos == 'X' || "><^v".Contains(char_at_new_pos)) 
+                         && (char_to_curr_right == 'X' || "><^v".Contains(char_to_curr_right))) 
+                         { after_turn = turn(help, "left"); }
+                    maze[actual.Item1, actual.Item2] = after_turn;
+                }
+            }
+        }
+
+        private void print_maze()
+        {
+            for (int i = 0; i < maze.GetLength(0); i++)
+                for (int j = 0; j < maze.GetLength(1); j++)
+                {
+                    Console.Write(Convert.ToChar(maze[i, j]));
+                    if (j == maze.GetLength(1) - 1) { Console.Write("\n"); }
+                }
+            Console.WriteLine();
+        }
+
+        public void main_function()
+        {
+            for (int i = 0; i < 20; i++)
+            {
+                change();
+                print_maze();
+            }
+        }
+
+
+
+    }
+    internal class Program
+    {
+        static public int reader()
+        {
+            int vstupchar = Console.Read();
+            int cislo = 0;
+            int znak_cisla = 1;
+            while ((vstupchar < '0') || (vstupchar > '9') && (vstupchar != '-'))
+            {
+                if (vstupchar == '-')
+                {
+                    znak_cisla = -1;
+                }
+                else { znak_cisla = 1; }
+                vstupchar = Console.Read();
+            }
+            while ((vstupchar >= '0') && (vstupchar <= '9'))
+            {
+                cislo = cislo * 10 + vstupchar - '0';
+                vstupchar = Console.Read();
+            }
+            cislo = cislo * znak_cisla;
+            return cislo;
+        }
+        static void Main(string[] args)
+        {
+            int sirka = reader();
+            int vyska = reader();
+            char[,] maze = new char[vyska, sirka];
+            int dimension = sirka * vyska;
+            List<(int, int)> monsters = new List<(int, int)>();
+            for (int index = 0; index < dimension; index++)
+            {
+                char c = Convert.ToChar(Console.Read());
+                while (!".X><^v".Contains(c)) { c = Convert.ToChar(Console.Read()); }
+                int col = index % sirka;
+                int row = index / sirka;
+                maze[row, col] = c;
+                if ("><^v".Contains(c)) { monsters.Add((row, col)); }
+            }
+            Monster monster = new Monster(monsters, maze);
+            monster.main_function();
+        }
+    }
+}
