@@ -1,0 +1,139 @@
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+
+namespace Alphabet
+{
+    public class Alphabet
+    {
+        private List<(int,int)> vectors = new List<(int, int)>() { (1,0), (-1,0), (0,1), (0,-1) };
+        private Dictionary<(int, int), int> dict_help = new Dictionary<(int, int), int>();
+        private Queue<(int, int)> queue = new Queue<(int, int)>();
+        private char[,] alphabet_table;
+        private List<int>[] distances;
+        private List<(int,int)>[] positions;
+        private Dictionary<(int, int, int), int> main_dict = new Dictionary<(int, int, int), int>();
+        private string word;
+        public Alphabet(char[,] alphabet_table, string word)
+        {
+            this.alphabet_table = alphabet_table;
+            this.word = word;
+            Initialize_distances();
+        }
+        private void Initialize_distances()
+        { 
+            distances = new List<int>[word.Length];
+            positions = new List<(int, int)>[word.Length];
+            for (int i = 0; i < word.Length; i++)
+            {
+                distances[i] = new List<int>();
+                positions[i] = new List<(int, int)>();
+            }
+        }
+        private bool valid_position((int, int) pos)
+        { 
+            return (pos.Item1 >= 0 && pos.Item1 < alphabet_table.GetLength(0) && 
+                    pos.Item2 >= 0 && pos.Item2 < alphabet_table.GetLength(1));
+        }
+        private void Control_position((int, int) curr_pos, int pos_of_char, int dist)
+        {
+            if (word[pos_of_char + 1] == alphabet_table[curr_pos.Item1, curr_pos.Item2])
+            {
+                (int, int, int) dict_key = (curr_pos.Item1, curr_pos.Item2, pos_of_char + 1);
+                if (main_dict.ContainsKey(dict_key))
+                {
+                    int dict_value = main_dict[dict_key];
+                    if (dict_value > dist + 1)
+                    {
+                        main_dict[dict_key] = dist + 1;
+                        for (int i = 0; i < distances[pos_of_char + 1].Count; i++)
+                        {
+                            if (positions[pos_of_char + 1][i] == curr_pos)
+                            {
+                                distances[pos_of_char + 1][i] = dist + 1;
+                                break;
+                            }
+                        }
+                    }
+                }
+                else
+                {
+                    main_dict[dict_key] = dist + 1;
+                    distances[pos_of_char + 1].Add(dist + 1);
+                    positions[pos_of_char + 1].Add(curr_pos);
+                }
+            }
+        }
+        private void BFS((int, int) current_pos, int pos_of_char_in_word, int initial_dist)
+        { 
+            queue.Enqueue(current_pos);
+            dict_help[current_pos] = initial_dist;
+            HashSet<(int, int)> visited = new HashSet<(int, int)>() {current_pos };
+            Control_position(current_pos,pos_of_char_in_word, initial_dist);
+            while (queue.Count > 0)
+            { 
+                (int,int) curr_state = queue.Dequeue();
+                int dist = dict_help[curr_state] + 1;
+                foreach ((int, int) vector in vectors)
+                { 
+                    (int,int) new_state = (curr_state.Item1 + vector.Item1, curr_state.Item2 + vector.Item2);
+                    if (valid_position(new_state) && !visited.Contains(new_state))
+                    { 
+                        dict_help[new_state] = dist;
+                        queue.Enqueue(new_state);
+                        visited.Add(new_state);
+                        Control_position(new_state, pos_of_char_in_word, dist);
+                    }
+                }
+            }
+            dict_help.Clear();
+            visited.Clear();
+        }
+        public void main()
+        {
+            BFS((0, 0), -1, 0);
+            for(int i = 0; i < word.Length - 1; i++)
+                for (int j = 0; j < distances[i].Count; j++)
+                {
+                    int dist = distances[i][j];
+                    (int, int) pos = positions[i][j];
+                    BFS(pos, i, dist);
+                }
+            Console.WriteLine(distances[word.Length - 1].Min());
+
+        }
+    }
+    internal class Program
+    {
+        static void Main(string[] args)
+        {
+            int sirka = Convert.ToInt32(Console.ReadLine());
+            int vyska = Convert.ToInt32(Console.ReadLine());
+            HashSet<char> set = new HashSet<char>();
+            char[,] alphabet_table = new char[vyska,sirka];
+            int lenght = sirka * vyska;
+            for (int i = 0; i < lenght; i++)
+            {
+                int riadok = i / sirka;
+                int stlpec = i % sirka;
+                alphabet_table[riadok, stlpec] = Convert.ToChar(Console.Read());
+                set.Add(alphabet_table[riadok, stlpec]);
+            }
+            Console.ReadLine();
+
+            string word = "";
+            char char_to_end_line = '\n';
+            char current = Convert.ToChar(Console.Read());
+            while (current != char_to_end_line)
+            {
+                if (set.Contains(current)) { word += current; }
+                current = Convert.ToChar(Console.Read());
+            }
+            Alphabet alph = new Alphabet(alphabet_table, word);
+            alph.main();
+            //Console.ReadLine();
+        }
+    }
+}
